@@ -8,29 +8,10 @@ shopt -s globstar
 # REQUESTED_BUILDPACK_ID - The ID of the buildpack to package and push to the container registry.
 # for example `heroku/nodejs-function` or `heroku/nodejs-engine`.
 
-function find_buildpack_toml_path() {
-	local requested_buildpack_id="${1}"
-	local buildpack_id
-	local matching_buildpack_toml_paths=()
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-	for buildpack_toml_path in **/buildpack.toml; do
-		buildpack_id="$(yj -t <"${buildpack_toml_path}" | jq -r .buildpack.id)"
-		if [[ "${buildpack_id}" == "${requested_buildpack_id}" ]]; then
-			matching_buildpack_toml_paths+=("${buildpack_toml_path}")
-		fi
-	done
-
-	num_paths=${#matching_buildpack_toml_paths[@]}
-	if [[ num_paths -eq 0 ]]; then
-		echo "Could not find requested buildpack with ID '${requested_buildpack_id}'" >&2
-		exit 1
-	elif [[ num_paths -gt 1 ]]; then
-		echo "Found multiple buildpacks matching ID '${requested_buildpack_id}'" >&2
-		echo "${matching_buildpack_toml_paths[@]}" >&2
-		exit 1
-	fi
-	echo "${matching_buildpack_toml_paths[0]}"
-}
+# shellcheck source=SCRIPTDIR/../scripts/utils.sh
+source "${SCRIPT_DIR}/utils.sh"
 
 buildpack_id=$(echo "${REQUESTED_BUILDPACK_ID:?Must be set to a valid buildpack ID!}" | tr -d '[:space:]' )
 buildpack_toml_path="$(find_buildpack_toml_path "${buildpack_id}")"

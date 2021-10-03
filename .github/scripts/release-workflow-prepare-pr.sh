@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+# shellcheck source=SCRIPTDIR/../scripts/utils.sh
+source "${SCRIPT_DIR}/utils.sh"
+
 released_buildpack_id=$(echo "${1:?}" | tr -d '[:space:]' )
 released_buildpack_version="${2:?}"
 released_buildpack_image_address="${3:?}"
@@ -8,24 +13,6 @@ released_buildpack_image_address="${3:?}"
 released_buildpack_next_version=$(
 	echo "${released_buildpack_version}" | awk -F. -v OFS=. '{ $NF=sprintf("%d\n", ($NF+1)); printf $0 }'
 )
-
-function package_toml_contains_image_address_root() {
-	local -r package_toml_path="${1:?}"
-	local -r image_address_root="${2:?}"
-
-	yj -t <"${package_toml_path}" | jq -e "[.dependencies[].uri | select(startswith(\"${image_address_root}\"))] | length > 0" >/dev/null
-}
-
-function escape_for_sed() {
-	echo "${1:?}" | sed 's/[]\/\[\.]/\\&/g'
-}
-
-function is_meta_buildpack_with_dependency() {
-	local -r buildpack_toml_path="${1:?}"
-	local -r buildpack_id="${2:?}"
-
-	yj -t <"${buildpack_toml_path}" | jq -e "[.order[]?.group[]?.id | select(. == \"${buildpack_id}\")] | length > 0" >/dev/null
-}
 
 # This is the heading we're looking for when updating CHANGELOG.md files
 unreleased_heading=$(escape_for_sed "## [Unreleased]")
